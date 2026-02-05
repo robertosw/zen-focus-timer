@@ -104,9 +104,7 @@ class _ScreenState extends State<Screen> {
                       onPressed: _onPlayPauseButtonTap,
                       icon: timer.isActive ? Icons.pause : Icons.play_arrow,
                     ),
-
                     Button(onPressed: _onStopButtonTap, icon: Icons.stop),
-
                     Button(
                       onPressed: _onFullScreenButtonTap,
                       icon: FullScreen.isFullScreen ? Icons.fullscreen_exit : Icons.fullscreen,
@@ -194,6 +192,7 @@ class AnimatedScrollableIntValueDisplay extends StatelessWidget {
         textBaseline: .alphabetic,
         children: [
           AnimatedSize(
+            clipBehavior: .none,
             duration: const Duration(milliseconds: 1000),
             curve: Curves.decelerate,
             child: Padding(
@@ -204,6 +203,7 @@ class AnimatedScrollableIntValueDisplay extends StatelessWidget {
                   fontSize: 100,
                   fontFamily: "NotoSans",
                   fontVariations: [FontVariation.weight(800)],
+                  fontFeatures: [FontFeature.tabularFigures()],
                   color: colorForeground,
                 ),
               ),
