@@ -1,26 +1,30 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/src/gestures/events.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(MaterialApp(title: 'Zen Timer', home: const Screen()));
 }
 
 const colorForeground = Color(0xFF3E2723);
 const colorElement = Color(0xFFD7CCC8);
 const colorBackground = Color(0xFFEFEBE9);
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+const textStyleDurationLabel = TextStyle(
+  fontSize: 30,
+  fontFamily: "NotoSans",
+  fontVariations: [FontVariation.weight(600)],
+  color: colorForeground,
+);
 
-  // This widget is the root of your application.
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(title: 'Flutter Demo', theme: ThemeData(), home: const Screen());
-  }
-}
+const textStyleDurationValues = TextStyle(
+  fontSize: 100,
+  fontFamily: "NotoSans",
+  fontVariations: [FontVariation.weight(800)],
+  color: colorForeground,
+);
 
 class Screen extends StatefulWidget {
   const Screen({super.key});
@@ -47,20 +51,6 @@ class _ScreenState extends State<Screen> {
 
   @override
   Widget build(BuildContext context) {
-    const textStyleDurationLabel = TextStyle(
-      fontSize: 30,
-      fontFamily: "NotoSans",
-      fontVariations: [FontVariation.weight(600)],
-      color: colorForeground,
-    );
-
-    const textStyleDurationValues = TextStyle(
-      fontSize: 100,
-      fontFamily: "NotoSans",
-      fontVariations: [FontVariation.weight(800)],
-      color: colorForeground,
-    );
-
     return Scaffold(
       backgroundColor: colorBackground,
       body: Center(
@@ -78,10 +68,13 @@ class _ScreenState extends State<Screen> {
                 if (timer.isActive == false || hours > 0)
                   Listener(
                     onPointerSignal: _onHoursScrolled,
-                    child: Column(
+                    child: Row(
+                      crossAxisAlignment: .baseline,
+                      textBaseline: .alphabetic,
+                      spacing: 5,
                       children: [
                         Text("$hours", style: textStyleDurationValues),
-                        Text("Hours", style: textStyleDurationLabel),
+                        Text("h", style: textStyleDurationLabel),
                       ],
                     ),
                   ),
@@ -89,20 +82,26 @@ class _ScreenState extends State<Screen> {
                 if (timer.isActive == false || minutes > 0 && duration.inMinutes < 60)
                   Listener(
                     onPointerSignal: _onMinutesScrolled,
-                    child: Column(
+                    child: Row(
+                      crossAxisAlignment: .baseline,
+                      textBaseline: .alphabetic,
+                      spacing: 5,
                       children: [
                         Text(minutes.toString().padLeft(2, "0"), style: textStyleDurationValues),
-                        Text("Minutes", style: textStyleDurationLabel),
+                        Text("min", style: textStyleDurationLabel),
                       ],
                     ),
                   ),
                 if (timer.isActive == false || duration.inSeconds < 60)
                   Listener(
                     onPointerSignal: _onSecondsScrolled,
-                    child: Column(
+                    child: Row(
+                      crossAxisAlignment: .baseline,
+                      textBaseline: .alphabetic,
+                      spacing: 5,
                       children: [
                         Text(seconds.toString().padLeft(2, "0"), style: textStyleDurationValues),
-                        Text("Seconds", style: textStyleDurationLabel),
+                        Text("sec", style: textStyleDurationLabel),
                       ],
                     ),
                   ),
