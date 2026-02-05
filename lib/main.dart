@@ -11,20 +11,6 @@ void main() {
 const colorForeground = Color(0xFF3E2723); // 9 44 24
 const colorBackground = Color(0xFFD7CCC8); // 20 3 94
 
-const textStyleDurationLabel = TextStyle(
-  fontSize: 30,
-  fontFamily: "NotoSans",
-  fontVariations: [FontVariation.weight(600)],
-  color: colorForeground,
-);
-
-const textStyleDurationValues = TextStyle(
-  fontSize: 100,
-  fontFamily: "NotoSans",
-  fontVariations: [FontVariation.weight(800)],
-  color: colorForeground,
-);
-
 class Screen extends StatefulWidget {
   const Screen({super.key});
 
@@ -78,50 +64,30 @@ class _ScreenState extends State<Screen> {
                   spacing: 50,
                   children: [
                     if (timer.isActive == false || hours > 0)
-                      Listener(
-                        onPointerSignal: _onHoursScrolled,
-                        child: Row(
-                          crossAxisAlignment: .baseline,
-                          textBaseline: .alphabetic,
-                          spacing: 5,
-                          children: [
-                            Text("$hours", style: textStyleDurationValues),
-                            Text("h", style: textStyleDurationLabel),
-                          ],
-                        ),
+                      AnimatedScrollableIntValueDisplay(
+                        onScrolledUp: () => _modifyDuration(const Duration(hours: 1)),
+                        onScrolledDown: () => _modifyDuration(const Duration(hours: -1)),
+                        value: hours,
+                        leftPadAmount: timer.isActive ? 1 : 2,
+                        label: "h",
                       ),
 
                     if (timer.isActive == false || minutes > 0 && duration.inMinutes < 60)
-                      Listener(
-                        onPointerSignal: _onMinutesScrolled,
-                        child: Row(
-                          crossAxisAlignment: .baseline,
-                          textBaseline: .alphabetic,
-                          spacing: 5,
-                          children: [
-                            Text(
-                              minutes.toString().padLeft(timer.isActive ? 1 : 2, "0"),
-                              style: textStyleDurationValues,
-                            ),
-                            Text("min", style: textStyleDurationLabel),
-                          ],
-                        ),
+                      AnimatedScrollableIntValueDisplay(
+                        onScrolledUp: () => _modifyDuration(const Duration(minutes: 5)),
+                        onScrolledDown: () => _modifyDuration(const Duration(minutes: -5)),
+                        value: minutes,
+                        leftPadAmount: timer.isActive ? 1 : 2,
+                        label: "min",
                       ),
+
                     if (timer.isActive == false || duration.inSeconds < 60)
-                      Listener(
-                        onPointerSignal: _onSecondsScrolled,
-                        child: Row(
-                          crossAxisAlignment: .baseline,
-                          textBaseline: .alphabetic,
-                          spacing: 5,
-                          children: [
-                            Text(
-                              seconds.toString().padLeft(timer.isActive ? 1 : 2, "0"),
-                              style: textStyleDurationValues,
-                            ),
-                            Text("sec", style: textStyleDurationLabel),
-                          ],
-                        ),
+                      AnimatedScrollableIntValueDisplay(
+                        onScrolledUp: () => _modifyDuration(const Duration(seconds: 15)),
+                        onScrolledDown: () => _modifyDuration(const Duration(seconds: -15)),
+                        value: seconds,
+                        leftPadAmount: timer.isActive ? 1 : 2,
+                        label: "sec",
                       ),
                   ],
                 ),
@@ -133,6 +99,15 @@ class _ScreenState extends State<Screen> {
     );
   }
 
+  /// ---------------------------------------------------------------------------------------------------
+  void _modifyDuration(Duration changeBy) {
+    setState(() {
+      final newDuration = duration + changeBy;
+      duration = (newDuration.isNegative) ? Duration.zero : newDuration;
+    });
+  }
+
+  /// ---------------------------------------------------------------------------------------------------
   void _onPageLongPress() => setState(() {
     timer.cancel();
     duration = Duration.zero;
@@ -150,45 +125,6 @@ class _ScreenState extends State<Screen> {
   }
 
   /// ---------------------------------------------------------------------------------------------------
-  void _onHoursScrolled(PointerSignalEvent event) {
-    if (event is! PointerScrollEvent) return;
-    final hourChange = (event.scrollDelta.dy > 0)
-        ? -1
-        : (event.scrollDelta.dy < 0)
-        ? 1
-        : 0;
-    setState(() {
-      duration = Duration(hours: max(0, hours + hourChange), minutes: minutes, seconds: seconds);
-    });
-  }
-
-  /// ---------------------------------------------------------------------------------------------------
-  void _onMinutesScrolled(PointerSignalEvent event) {
-    if (event is! PointerScrollEvent) return;
-    final minuteChange = (event.scrollDelta.dy > 0)
-        ? -5
-        : (event.scrollDelta.dy < 0)
-        ? 5
-        : 0;
-    setState(() {
-      duration = Duration(hours: hours, minutes: max(0, minutes + minuteChange), seconds: seconds);
-    });
-  }
-
-  /// ---------------------------------------------------------------------------------------------------
-  void _onSecondsScrolled(PointerSignalEvent event) {
-    if (event is! PointerScrollEvent) return;
-    final secondChange = (event.scrollDelta.dy > 0)
-        ? -15
-        : (event.scrollDelta.dy < 0)
-        ? 15
-        : 0;
-    setState(() {
-      duration = Duration(hours: hours, minutes: minutes, seconds: max(0, seconds + secondChange));
-    });
-  }
-
-  /// ---------------------------------------------------------------------------------------------------
   void _onTimerTick(Timer timer) {
     if (duration < Duration(seconds: 1)) {
       timer.cancel();
@@ -196,5 +132,66 @@ class _ScreenState extends State<Screen> {
     } else {
       setState(() => duration -= Duration(seconds: 1));
     }
+  }
+}
+
+class AnimatedScrollableIntValueDisplay extends StatelessWidget {
+  final void Function() onScrolledUp;
+  final void Function() onScrolledDown;
+  final int value;
+  final int leftPadAmount;
+  final String label;
+
+  const AnimatedScrollableIntValueDisplay({
+    super.key,
+    required this.value,
+    required this.leftPadAmount,
+    required this.onScrolledUp,
+    required this.onScrolledDown,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Listener(
+      onPointerSignal: (event) {
+        if (event is PointerScrollEvent && event.scrollDelta.dy > 0) {
+          onScrolledDown();
+        } else if (event is PointerScrollEvent && event.scrollDelta.dy < 0) {
+          onScrolledUp();
+        }
+      },
+      child: Row(
+        crossAxisAlignment: .baseline,
+        textBaseline: .alphabetic,
+        children: [
+          AnimatedSize(
+            duration: const Duration(milliseconds: 1000),
+            curve: Curves.decelerate,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Text(
+                value.toString().padLeft(leftPadAmount, "0"),
+                style: TextStyle(
+                  fontSize: 100,
+                  fontFamily: "NotoSans",
+                  fontVariations: [FontVariation.weight(800)],
+                  color: colorForeground,
+                ),
+              ),
+            ),
+          ),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 30,
+              fontFamily: "NotoSans",
+              fontVariations: [FontVariation.weight(600)],
+              color: colorForeground,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
