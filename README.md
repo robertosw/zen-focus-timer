@@ -10,6 +10,8 @@ Select a duration using the mouse wheel. After starting the timer, only the long
 **Example:**
 Starting a timer for 1 minutes and 15 seconds will only display the minutes until there is less than one minute remaining:
 
-[Preview](https://github.com/user-attachments/assets/ddc14455-f95e-4ecb-a486-05ec4176c29f)
+[ZenTimerPreview.webm](https://github.com/user-attachments/assets/47768f42-2eb5-4923-8022-924722cba1cd)
+
 
 Inspired by [fullscreencountdowntimer](https://fullscreencountdowntimer.com/)
+
