@@ -3,8 +3,12 @@ import 'dart:math';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_fullscreen/flutter_fullscreen.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await FullScreen.ensureInitialized();
+
   runApp(MaterialApp(title: 'Zen Timer', home: const Screen()));
 }
 
@@ -28,6 +32,8 @@ class _ScreenState extends State<Screen> {
 
   int get seconds => duration.inSeconds - minutes * 60 - hours * 3600;
 
+  bool isMouseOverWindow = false;
+
   @override
   void dispose() {
     timer.cancel();
@@ -41,21 +47,26 @@ class _ScreenState extends State<Screen> {
         overlayColor: WidgetStateProperty.resolveWith((states) {
           return states.contains(WidgetState.pressed) ? Colors.black12 : Colors.transparent;
         }),
+        onHover: (value) => setState(() => isMouseOverWindow = value),
         onTap: _onPageTap,
         onLongPress: _onPageLongPress,
+        onDoubleTap: () {
+          FullScreen.setFullScreen(FullScreen.isFullScreen == false, systemUiMode: .immersive);
+        },
         child: Ink(
           color: colorBackground,
           child: Stack(
             children: [
-              Positioned(
-                bottom: 5,
-                right: 5,
-                child: Text(
-                  "Click anywhere to start / stop\nHold to reset",
-                  style: TextStyle(fontFamily: "NotoSans", color: colorForeground),
-                  textAlign: .right,
+              if (isMouseOverWindow)
+                Positioned(
+                  bottom: 5,
+                  right: 5,
+                  child: Text(
+                    "Click anywhere to start / stop\nHold to reset",
+                    style: TextStyle(fontFamily: "NotoSans", color: colorForeground),
+                    textAlign: .right,
+                  ),
                 ),
-              ),
               Center(
                 child: Row(
                   mainAxisSize: .min,
