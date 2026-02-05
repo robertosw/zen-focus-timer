@@ -43,71 +43,88 @@ class _ScreenState extends State<Screen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: InkWell(
-        overlayColor: WidgetStateProperty.resolveWith((states) {
-          return states.contains(WidgetState.pressed) ? Colors.black12 : Colors.transparent;
-        }),
-        onHover: (value) => setState(() => isMouseOverWindow = value),
-        onTap: _onPageTap,
-        onLongPress: _onPageLongPress,
-        onDoubleTap: () {
-          FullScreen.setFullScreen(FullScreen.isFullScreen == false, systemUiMode: .immersive);
-        },
-        child: Ink(
-          color: colorBackground,
-          child: Stack(
-            children: [
-              if (isMouseOverWindow)
-                Positioned(
-                  bottom: 5,
-                  right: 5,
-                  child: Text(
-                    "Click anywhere to start / stop\nHold to reset",
-                    style: TextStyle(fontFamily: "NotoSans", color: colorForeground),
-                    textAlign: .right,
+      backgroundColor: colorBackground,
+      body: MouseRegion(
+        onEnter: (event) => setState(() => isMouseOverWindow = true),
+        onExit: (event) => setState(() => isMouseOverWindow = false),
+        child: Column(
+          mainAxisAlignment: .center,
+          crossAxisAlignment: .center,
+          children: [
+            Row(
+              mainAxisSize: .max,
+              mainAxisAlignment: .center,
+              crossAxisAlignment: .center,
+              spacing: 50,
+              children: [
+                if (timer.isActive == false || hours > 0)
+                  AnimatedScrollableIntValueDisplay(
+                    onScrolledUp: () => _modifyDuration(const Duration(hours: 1)),
+                    onScrolledDown: () => _modifyDuration(const Duration(hours: -1)),
+                    value: hours,
+                    leftPadAmount: timer.isActive ? 1 : 2,
+                    label: "h",
                   ),
-                ),
-              Center(
+
+                if (timer.isActive == false || minutes > 0 && duration.inMinutes < 60)
+                  AnimatedScrollableIntValueDisplay(
+                    onScrolledUp: () => _modifyDuration(const Duration(minutes: 5)),
+                    onScrolledDown: () => _modifyDuration(const Duration(minutes: -5)),
+                    value: minutes,
+                    leftPadAmount: timer.isActive ? 1 : 2,
+                    label: "min",
+                  ),
+
+                if (timer.isActive == false || duration.inSeconds < 60)
+                  AnimatedScrollableIntValueDisplay(
+                    onScrolledUp: () => _modifyDuration(const Duration(seconds: 15)),
+                    onScrolledDown: () => _modifyDuration(const Duration(seconds: -15)),
+                    value: seconds,
+                    leftPadAmount: timer.isActive ? 1 : 2,
+                    label: "sec",
+                  ),
+              ],
+            ),
+            AnimatedCrossFade(
+              crossFadeState: isMouseOverWindow ? .showSecond : .showFirst,
+              duration: const Duration(milliseconds: 750),
+              firstCurve: Curves.decelerate,
+              secondCurve: Curves.decelerate,
+              sizeCurve: Curves.decelerate,
+              alignment: .center,
+              firstChild: SizedBox(),
+              secondChild: Padding(
+                padding: EdgeInsets.only(top: 20),
                 child: Row(
-                  mainAxisSize: .min,
-                  mainAxisAlignment: .center,
                   crossAxisAlignment: .center,
-                  spacing: 50,
+                  mainAxisAlignment: .center,
+                  spacing: 20,
                   children: [
-                    if (timer.isActive == false || hours > 0)
-                      AnimatedScrollableIntValueDisplay(
-                        onScrolledUp: () => _modifyDuration(const Duration(hours: 1)),
-                        onScrolledDown: () => _modifyDuration(const Duration(hours: -1)),
-                        value: hours,
-                        leftPadAmount: timer.isActive ? 1 : 2,
-                        label: "h",
-                      ),
+                    Button(
+                      onPressed: _onPlayPauseButtonTap,
+                      icon: timer.isActive ? Icons.pause : Icons.play_arrow,
+                    ),
 
-                    if (timer.isActive == false || minutes > 0 && duration.inMinutes < 60)
-                      AnimatedScrollableIntValueDisplay(
-                        onScrolledUp: () => _modifyDuration(const Duration(minutes: 5)),
-                        onScrolledDown: () => _modifyDuration(const Duration(minutes: -5)),
-                        value: minutes,
-                        leftPadAmount: timer.isActive ? 1 : 2,
-                        label: "min",
-                      ),
+                    Button(onPressed: _onStopButtonTap, icon: Icons.stop),
 
-                    if (timer.isActive == false || duration.inSeconds < 60)
-                      AnimatedScrollableIntValueDisplay(
-                        onScrolledUp: () => _modifyDuration(const Duration(seconds: 15)),
-                        onScrolledDown: () => _modifyDuration(const Duration(seconds: -15)),
-                        value: seconds,
-                        leftPadAmount: timer.isActive ? 1 : 2,
-                        label: "sec",
-                      ),
+                    Button(
+                      onPressed: _onFullScreenButtonTap,
+                      icon: FullScreen.isFullScreen ? Icons.fullscreen_exit : Icons.fullscreen,
+                    ),
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  /// ---------------------------------------------------------------------------------------------------
+  void _onFullScreenButtonTap() {
+    FullScreen.setFullScreen(FullScreen.isFullScreen == false, systemUiMode: .immersive);
+    setState(() {}); // button's icon has to change
   }
 
   /// ---------------------------------------------------------------------------------------------------
@@ -119,13 +136,13 @@ class _ScreenState extends State<Screen> {
   }
 
   /// ---------------------------------------------------------------------------------------------------
-  void _onPageLongPress() => setState(() {
+  void _onStopButtonTap() => setState(() {
     timer.cancel();
     duration = Duration.zero;
   });
 
   /// ---------------------------------------------------------------------------------------------------
-  void _onPageTap() {
+  void _onPlayPauseButtonTap() {
     setState(() {
       if (timer.isActive) {
         timer.cancel();
@@ -202,6 +219,35 @@ class AnimatedScrollableIntValueDisplay extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class Button extends StatelessWidget {
+  final void Function() onPressed;
+  final IconData icon;
+
+  const Button({super.key, required this.onPressed, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      type: .transparency,
+      child: InkWell(
+        overlayColor: WidgetStatePropertyAll(Colors.white10),
+        borderRadius: BorderRadius.all(Radius.circular(10)),
+        onTap: onPressed,
+        child: Ink(
+          decoration: BoxDecoration(
+            color: colorForeground,
+            borderRadius: BorderRadius.all(Radius.circular(10)),
+          ),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minWidth: 80, minHeight: 80),
+            child: Icon(icon, size: 40, color: Color(0xFFFFFFFF)),
+          ),
+        ),
       ),
     );
   }
