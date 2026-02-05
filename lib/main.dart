@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/src/gestures/events.dart';
 
 void main() {
   runApp(const MyApp());
@@ -31,6 +33,12 @@ class _ScreenState extends State<Screen> {
   Timer timer = Timer(Duration.zero, () => ())..cancel();
   Duration duration = Duration.zero;
 
+  int get hours => duration.inHours;
+
+  int get minutes => duration.inMinutes - hours * 60;
+
+  int get seconds => duration.inSeconds - minutes * 60 - hours * 3600;
+
   @override
   void dispose() {
     timer.cancel();
@@ -59,52 +67,104 @@ class _ScreenState extends State<Screen> {
         child: Column(
           crossAxisAlignment: .center,
           mainAxisAlignment: .center,
+          spacing: 50,
           children: [
             Row(
+              mainAxisSize: .min,
               mainAxisAlignment: .center,
               crossAxisAlignment: .center,
               spacing: 50,
               children: [
-                if (duration == Duration.zero || duration.inHours > 0)
-                  Column(
-                    children: [
-                      Text("${duration.inHours}", style: textStyleDurationValues),
-                      Text("Hours", style: textStyleDurationLabel),
-                    ],
+                if (timer.isActive == false || hours > 0)
+                  Listener(
+                    onPointerSignal: _onHoursScrolled,
+                    child: Column(
+                      children: [
+                        Text("$hours", style: textStyleDurationValues),
+                        Text("Hours", style: textStyleDurationLabel),
+                      ],
+                    ),
                   ),
-                if (duration == Duration.zero || duration.inMinutes > 0 && duration.inMinutes <= 60)
-                  Column(
-                    children: [
-                      Text(
-                        duration.inMinutes.toString().padLeft(2, "0"),
-                        style: textStyleDurationValues,
-                      ),
-                      Text("Minutes", style: textStyleDurationLabel),
-                    ],
+
+                if (timer.isActive == false || minutes > 0 && duration.inMinutes < 60)
+                  Listener(
+                    onPointerSignal: _onMinutesScrolled,
+                    child: Column(
+                      children: [
+                        Text(minutes.toString().padLeft(2, "0"), style: textStyleDurationValues),
+                        Text("Minutes", style: textStyleDurationLabel),
+                      ],
+                    ),
                   ),
-                if (duration == Duration.zero || duration.inSeconds > 0 && duration.inSeconds <= 60)
-                  Column(
-                    children: [
-                      Text(
-                        duration.inSeconds.toString().padLeft(2, "0"),
-                        style: textStyleDurationValues,
-                      ),
-                      Text("Seconds", style: textStyleDurationLabel),
-                    ],
+                if (timer.isActive == false || duration.inSeconds < 60)
+                  Listener(
+                    onPointerSignal: _onSecondsScrolled,
+                    child: Column(
+                      children: [
+                        Text(seconds.toString().padLeft(2, "0"), style: textStyleDurationValues),
+                        Text("Seconds", style: textStyleDurationLabel),
+                      ],
+                    ),
                   ),
               ],
             ),
-            ElevatedButton(
-              onPressed: () => setState(() {
-                duration = Duration(seconds: 30);
-                timer = Timer.periodic(Duration(seconds: 1), onTimerTick);
-              }),
-              child: Text("30 Sec"),
+            Row(
+              crossAxisAlignment: .center,
+              mainAxisAlignment: .center,
+              spacing: 25,
+              children: [
+                Button(
+                  onPressed: () => setState(() {
+                    if (timer.isActive) {
+                      timer.cancel();
+                    } else {
+                      timer = Timer.periodic(Duration(seconds: 1), onTimerTick);
+                    }
+                  }),
+                  icon: timer.isActive ? Icons.stop_sharp : Icons.play_arrow_sharp,
+                ),
+              ],
             ),
           ],
         ),
       ),
     );
+  }
+
+  void _onHoursScrolled(PointerSignalEvent event) {
+    if (event is! PointerScrollEvent) return;
+    final hourChange = (event.scrollDelta.dy > 0)
+        ? -1
+        : (event.scrollDelta.dy < 0)
+        ? 1
+        : 0;
+    setState(() {
+      duration = Duration(hours: max(0, hours + hourChange), minutes: minutes, seconds: seconds);
+    });
+  }
+
+  void _onMinutesScrolled(PointerSignalEvent event) {
+    if (event is! PointerScrollEvent) return;
+    final minuteChange = (event.scrollDelta.dy > 0)
+        ? -5
+        : (event.scrollDelta.dy < 0)
+        ? 5
+        : 0;
+    setState(() {
+      duration = Duration(hours: hours, minutes: max(0, minutes + minuteChange), seconds: seconds);
+    });
+  }
+
+  void _onSecondsScrolled(PointerSignalEvent event) {
+    if (event is! PointerScrollEvent) return;
+    final secondChange = (event.scrollDelta.dy > 0)
+        ? -15
+        : (event.scrollDelta.dy < 0)
+        ? 15
+        : 0;
+    setState(() {
+      duration = Duration(hours: hours, minutes: minutes, seconds: max(0, seconds + secondChange));
+    });
   }
 
   void onTimerTick(Timer timer) {
@@ -114,5 +174,33 @@ class _ScreenState extends State<Screen> {
     } else {
       setState(() => duration -= Duration(seconds: 1));
     }
+  }
+}
+
+class Button extends StatelessWidget {
+  final void Function() onPressed;
+  final IconData icon;
+
+  const Button({super.key, required this.onPressed, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      type: .transparency,
+      child: InkWell(
+        borderRadius: BorderRadius.all(Radius.circular(10)),
+        onTap: onPressed,
+        child: Ink(
+          decoration: BoxDecoration(
+            color: colorElement,
+            borderRadius: BorderRadius.all(Radius.circular(10)),
+          ),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minWidth: 80, minHeight: 80),
+            child: Icon(icon, size: 40),
+          ),
+        ),
+      ),
+    );
   }
 }
