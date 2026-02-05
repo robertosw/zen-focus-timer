@@ -8,9 +8,8 @@ void main() {
   runApp(MaterialApp(title: 'Zen Timer', home: const Screen()));
 }
 
-const colorForeground = Color(0xFF3E2723);
-const colorElement = Color(0xFFD7CCC8);
-const colorBackground = Color(0xFFEFEBE9);
+const colorForeground = Color(0xFF3E2723); // 9 44 24
+const colorBackground = Color(0xFFD7CCC8); // 20 3 94
 
 const textStyleDurationLabel = TextStyle(
   fontSize: 30,
@@ -52,84 +51,105 @@ class _ScreenState extends State<Screen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: colorBackground,
-      body: Center(
-        child: Column(
-          crossAxisAlignment: .center,
-          mainAxisAlignment: .center,
-          spacing: 50,
-          children: [
-            Row(
-              mainAxisSize: .min,
-              mainAxisAlignment: .center,
-              crossAxisAlignment: .center,
-              spacing: 50,
-              children: [
-                if (timer.isActive == false || hours > 0)
-                  Listener(
-                    onPointerSignal: _onHoursScrolled,
-                    child: Row(
-                      crossAxisAlignment: .baseline,
-                      textBaseline: .alphabetic,
-                      spacing: 5,
-                      children: [
-                        Text("$hours", style: textStyleDurationValues),
-                        Text("h", style: textStyleDurationLabel),
-                      ],
-                    ),
-                  ),
-
-                if (timer.isActive == false || minutes > 0 && duration.inMinutes < 60)
-                  Listener(
-                    onPointerSignal: _onMinutesScrolled,
-                    child: Row(
-                      crossAxisAlignment: .baseline,
-                      textBaseline: .alphabetic,
-                      spacing: 5,
-                      children: [
-                        Text(minutes.toString().padLeft(2, "0"), style: textStyleDurationValues),
-                        Text("min", style: textStyleDurationLabel),
-                      ],
-                    ),
-                  ),
-                if (timer.isActive == false || duration.inSeconds < 60)
-                  Listener(
-                    onPointerSignal: _onSecondsScrolled,
-                    child: Row(
-                      crossAxisAlignment: .baseline,
-                      textBaseline: .alphabetic,
-                      spacing: 5,
-                      children: [
-                        Text(seconds.toString().padLeft(2, "0"), style: textStyleDurationValues),
-                        Text("sec", style: textStyleDurationLabel),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-            Row(
-              crossAxisAlignment: .center,
-              mainAxisAlignment: .center,
-              spacing: 25,
-              children: [
-                Button(
-                  onPressed: () => setState(() {
-                    if (timer.isActive) {
-                      timer.cancel();
-                    } else {
-                      timer = Timer.periodic(Duration(seconds: 1), onTimerTick);
-                    }
-                  }),
-                  icon: timer.isActive ? Icons.stop_sharp : Icons.play_arrow_sharp,
+      body: InkWell(
+        overlayColor: WidgetStateProperty.resolveWith((states) {
+          return states.contains(WidgetState.pressed) ? Colors.black12 : Colors.transparent;
+        }),
+        onTap: _onPageTap,
+        onLongPress: _onPageLongPress,
+        child: Ink(
+          color: colorBackground,
+          child: Stack(
+            children: [
+              Positioned(
+                bottom: 5,
+                right: 5,
+                child: Text(
+                  "Click anywhere to start / stop\nHold to reset",
+                  style: TextStyle(fontFamily: "NotoSans", color: colorForeground),
+                  textAlign: .right,
                 ),
-              ],
-            ),
-          ],
+              ),
+              Center(
+                child: Row(
+                  mainAxisSize: .min,
+                  mainAxisAlignment: .center,
+                  crossAxisAlignment: .center,
+                  spacing: 50,
+                  children: [
+                    if (timer.isActive == false || hours > 0)
+                      Listener(
+                        onPointerSignal: _onHoursScrolled,
+                        child: Row(
+                          crossAxisAlignment: .baseline,
+                          textBaseline: .alphabetic,
+                          spacing: 5,
+                          children: [
+                            Text("$hours", style: textStyleDurationValues),
+                            Text("h", style: textStyleDurationLabel),
+                          ],
+                        ),
+                      ),
+
+                    if (timer.isActive == false || minutes > 0 && duration.inMinutes < 60)
+                      Listener(
+                        onPointerSignal: _onMinutesScrolled,
+                        child: Row(
+                          crossAxisAlignment: .baseline,
+                          textBaseline: .alphabetic,
+                          spacing: 5,
+                          children: [
+                            Text(
+                              minutes.toString().padLeft(timer.isActive ? 1 : 2, "0"),
+                              style: textStyleDurationValues,
+                            ),
+                            Text("min", style: textStyleDurationLabel),
+                          ],
+                        ),
+                      ),
+                    if (timer.isActive == false || duration.inSeconds < 60)
+                      Listener(
+                        onPointerSignal: _onSecondsScrolled,
+                        child: Row(
+                          crossAxisAlignment: .baseline,
+                          textBaseline: .alphabetic,
+                          spacing: 5,
+                          children: [
+                            Text(
+                              seconds.toString().padLeft(timer.isActive ? 1 : 2, "0"),
+                              style: textStyleDurationValues,
+                            ),
+                            Text("sec", style: textStyleDurationLabel),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
+  void _onPageLongPress() => setState(() {
+    timer.cancel();
+    duration = Duration.zero;
+  });
+
+  /// ---------------------------------------------------------------------------------------------------
+  void _onPageTap() {
+    setState(() {
+      if (timer.isActive) {
+        timer.cancel();
+      } else if (duration > Duration.zero) {
+        timer = Timer.periodic(Duration(seconds: 1), _onTimerTick);
+      }
+    });
+  }
+
+  /// ---------------------------------------------------------------------------------------------------
   void _onHoursScrolled(PointerSignalEvent event) {
     if (event is! PointerScrollEvent) return;
     final hourChange = (event.scrollDelta.dy > 0)
@@ -142,6 +162,7 @@ class _ScreenState extends State<Screen> {
     });
   }
 
+  /// ---------------------------------------------------------------------------------------------------
   void _onMinutesScrolled(PointerSignalEvent event) {
     if (event is! PointerScrollEvent) return;
     final minuteChange = (event.scrollDelta.dy > 0)
@@ -154,6 +175,7 @@ class _ScreenState extends State<Screen> {
     });
   }
 
+  /// ---------------------------------------------------------------------------------------------------
   void _onSecondsScrolled(PointerSignalEvent event) {
     if (event is! PointerScrollEvent) return;
     final secondChange = (event.scrollDelta.dy > 0)
@@ -166,40 +188,13 @@ class _ScreenState extends State<Screen> {
     });
   }
 
-  void onTimerTick(Timer timer) {
+  /// ---------------------------------------------------------------------------------------------------
+  void _onTimerTick(Timer timer) {
     if (duration < Duration(seconds: 1)) {
       timer.cancel();
       setState(() => duration = Duration.zero);
     } else {
       setState(() => duration -= Duration(seconds: 1));
     }
-  }
-}
-
-class Button extends StatelessWidget {
-  final void Function() onPressed;
-  final IconData icon;
-
-  const Button({super.key, required this.onPressed, required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      type: .transparency,
-      child: InkWell(
-        borderRadius: BorderRadius.all(Radius.circular(10)),
-        onTap: onPressed,
-        child: Ink(
-          decoration: BoxDecoration(
-            color: colorElement,
-            borderRadius: BorderRadius.all(Radius.circular(10)),
-          ),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minWidth: 80, minHeight: 80),
-            child: Icon(icon, size: 40),
-          ),
-        ),
-      ),
-    );
   }
 }
